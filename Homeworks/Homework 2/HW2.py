@@ -1,7 +1,9 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
+from tabulate import tabulate
 
+#Task 1
 def load_data(filename):
     my_list = []
     with open(filename, 'r', encoding='utf-8') as h:
@@ -91,7 +93,6 @@ def extract_ekhagsvagen_data(all_data):
             # Check if the address contains 'Ekhagsvägen'
             if 'Ekhagsvägen' in address:
                 ekhagsvagen_data.append(row)  # Add the row to the list
-    print(ekhagsvagen_data)
     return ekhagsvagen_data
 
 
@@ -105,7 +106,7 @@ def calculate_avg_ppsqm(data):
             square_meters = float(row[2])  
             sold_price = float(row[9])  
 
-            if square_meters > 0:  # Avoid division by zero
+            if square_meters > 0:  
                 price_per_sqm = sold_price / square_meters
                 total_ppsqm += price_per_sqm
                 count += 1
@@ -121,7 +122,7 @@ def calculate_avg_ppsqm(data):
 
 ekhagsvagen_data = extract_ekhagsvagen_data(all_data=data)
 avg_ppsqm_ekhagen = calculate_avg_ppsqm(ekhagsvagen_data)
-print(avg_ppsqm_ekhagen)
+#print(avg_ppsqm_ekhagen)
 
 def prepare_ppsqm_by_year(data):
     processed_data = []
@@ -166,4 +167,129 @@ plt.xlabel('Construction Year Range', fontsize=12)
 plt.ylabel('Average Price per Square Meter (PPSQM)', fontsize=12)
 plt.xticks(rotation=45)
 plt.tight_layout()
-plt.show()
+#plt.show()
+
+#Task 2
+def load_data_2(filename):
+    my_list_2 = []
+    with open(filename, 'r', encoding='utf-8') as f:
+        for line in f:
+            row = line.strip().split(';')
+            my_list_2.append(row)  
+    return my_list_2
+
+data_tk2 = load_data_2("2018_R_per_kommun.csv")
+
+def extract_giltiga_for_stockholm(all_data2):
+    """Extracts 'RÖSTER GILTIGA' values for 'Stockholms län'."""
+    if not all_data2:
+        return []
+
+    # Extract the header row
+    header = all_data2[0]
+    
+    # Get the indices of 'LÄNSNAMN' and 'RÖSTER GILTIGA'
+    try:
+        länsnamn_index = header.index('LÄNSNAMN')
+        giltiga_index = header.index('RÖSTER GILTIGA')
+    except ValueError as e:
+        raise ValueError("One or more columns not found in the header.") from e
+
+    # Filter rows for 'Stockholms län' and extract 'RÖSTER GILTIGA'
+    stockholm_giltiga = [
+        row[giltiga_index]
+        for row in all_data2[1:]  # Skip the header row
+        if len(row) > giltiga_index and row[länsnamn_index] == 'Stockholms län'
+    ]
+
+    return stockholm_giltiga
+
+def count_roster(giltiga_values):
+    try:
+        return sum(int(value) for value in giltiga_values)
+    except ValueError as l:
+        raise ValueError("Non-numeric value encountered in 'RÖSTER GILTIGA'.") from l
+
+giltiga_stockholm = extract_giltiga_for_stockholm(all_data2 = data_tk2)
+print("Giltiga röster för 'Stockholms län':")
+#for value in giltiga_stockholm:
+    #print(value)
+
+total_giltiga = count_roster(giltiga_stockholm)
+print("Antalet giltiga röster för 'Stockholms län':", total_giltiga)
+
+def majority_votes(all_data3):
+    if not all_data3:
+        return None, None
+    header = all_data3[0]
+    try:
+        kommun_index = header.index('KOMMUNNAMN')
+        x_index = header.index('S')
+    except ValueError as t:
+        raise ValueError("Saknas data") from t
+    max_percentage = -1
+    max_municipality = None
+
+    for row in all_data3[1:]:
+        if len(row) > x_index:
+            try:
+                municipality = row[kommun_index]
+                percentage = float(row[x_index].replace(',', '.'))
+                if percentage > max_percentage:
+                    max_percentage = percentage
+                    max_municipality = municipality
+            except ValueError:
+                continue
+    return max_municipality, max_percentage
+
+support_municipality, support_percentage = majority_votes(all_data3 = data_tk2)
+
+if support_municipality:
+    print(f"The municipality with the highest support for S is '{support_municipality}' with {support_percentage:.2f}%.")
+else:
+    print("No valid data found for Social Democratic Party support.")
+
+# Integration of Top Participation Ranking
+def rank_highest_participation(all_data, top_n=3):
+    if not all_data:
+        return []
+
+    # Extract the header row
+    header = all_data[0]
+    
+    # Get the indices of 'KOMMUNNAMN' and 'VALDELTAGANDE'
+    try:
+        kommun_index = header.index('KOMMUNNAMN')
+        valdeltagande_index = header.index('VALDELTAGANDE')
+    except ValueError as e:
+        raise ValueError("One or more required columns not found in the header.") from e
+
+    # Extract participation values and municipalities
+    participation_data = []
+    for row in all_data[1:]:  # Skip the header
+        if len(row) > valdeltagande_index:
+            try:
+                municipality = row[kommun_index]
+                participation = float(row[valdeltagande_index].replace(',', '.'))
+                participation_data.append((municipality, participation))
+            except ValueError:
+                continue  # Skip rows with invalid participation values
+
+    # Sort by participation in descending order
+    sorted_participation = sorted(participation_data, key=lambda x: x[1], reverse=True)
+
+    # Return the top N municipalities
+    return sorted_participation[:top_n]
+
+# Get the top 3 municipalities with highest participation
+top_municipalities = rank_highest_participation(data_tk2, top_n=3)
+
+# Display as a table
+from tabulate import tabulate
+print("\nTop 3 Municipalities by Participation:")
+print(tabulate(top_municipalities, headers=["Municipality", "Participation (%)"], tablefmt="grid"))
+
+#Task 3
+
+
+
