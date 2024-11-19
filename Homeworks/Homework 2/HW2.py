@@ -14,9 +14,7 @@ def load_data(filename):
             my_list.append(row)
     return my_list
 
-
 data = load_data("Booli_sold.csv")
-
 
 def calculate_price_per_square(all_data):
     results = []
@@ -52,7 +50,6 @@ def calculate_price_per_square(all_data):
 
 results = calculate_price_per_square(data)
 
-
 def most_expensive_apartment(data, top_n = 5):
     results = calculate_price_per_square(data)
 
@@ -65,8 +62,8 @@ def most_expensive_apartment(data, top_n = 5):
 top_apartments = most_expensive_apartment(data, top_n=5)
 
 # Print the top 5 expensive apartments
-#for apartment in top_apartments:
-    #print(apartment)
+for apartment in top_apartments:
+    print(apartment)
 
 def header_for_apartments(top_apartments):
     header = ['List Price', 'Square Meters', 'Sold Price', 'Price per Square Meters']
@@ -80,6 +77,17 @@ def header_for_apartments(top_apartments):
 top_apartments_with_header = header_for_apartments(top_apartments)
 #for row in top_apartments_with_header:
     #print(row)
+
+header = ['List Price', 'Square Meters', 'Sold Price', 'Price per Square Meters']
+
+# Convert dictionary results into rows for the table
+rows = [
+    [apartment['List price'], apartment['Square meters'], apartment['Sold price'], apartment['Price per square meters']]
+    for apartment in top_apartments
+]
+
+# Print the table using tabulate
+print(tabulate(rows, headers=header, tablefmt="grid"))
 
 def extract_ekhagsvagen_data(all_data):
     ekhagsvagen_data = []
@@ -284,12 +292,43 @@ def rank_highest_participation(all_data, top_n=3):
 # Get the top 3 municipalities with highest participation
 top_municipalities = rank_highest_participation(data_tk2, top_n=3)
 
-# Display as a table
-from tabulate import tabulate
+# Display as a table 
 print("\nTop 3 Municipalities by Participation:")
 print(tabulate(top_municipalities, headers=["Municipality", "Participation (%)"], tablefmt="grid"))
 
 #Task 3
+def load_data_3(filename):
+    my_list_3 = []
+    with open(filename, 'r', encoding='utf-8') as g:
+        for line in g:
+            row = line.strip().split(',')
+            my_list_3.append(row)  
+    return my_list_3
 
 
 
+df_2 = load_data_3("stroke-data.csv")
+
+columns = ['id', 'gender', 'age', 'hypertension', 'heart_disease', 'ever_married',
+           'work_type', 'Residence_type', 'avg_glucose_level', 'bmi', 'smoking_status', 'stroke']
+
+# Convert the list of lists into a pandas DataFrame
+data_frame = pd.DataFrame(df_2, columns=columns)
+
+# Convert numeric columns to the appropriate data type
+data_frame['age'] = pd.to_numeric(data_frame['age'], errors='coerce')
+data_frame['avg_glucose_level'] = pd.to_numeric(data_frame['avg_glucose_level'], errors='coerce')
+data_frame['bmi'] = pd.to_numeric(data_frame['bmi'], errors='coerce')
+data_frame['stroke'] = pd.to_numeric(data_frame['stroke'], errors='coerce')
+
+# Select only the relevant numeric columns for correlation
+selected_columns = ['age', 'avg_glucose_level', 'bmi', 'stroke']
+
+# Calculate the correlation matrix
+correlation_matrix = data_frame[selected_columns].corr()
+
+# Create the heatmap
+plt.figure(figsize=(8, 6))
+sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', fmt='.2f')
+plt.title("Correlation Heatmap")
+plt.show()
